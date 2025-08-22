@@ -12,6 +12,7 @@ FEATURE_FLAGS = {
     **DEFAULT_FEATURE_FLAGS,
     "ENABLE_TEMPLATE_PROCESSING": True,
     "EMBEDDED_SUPERSET": True,
+    "ENABLE_JAVASCRIPT_CONTROLS": True
 }
 
 # guest tokens (for embeds)
@@ -45,7 +46,7 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 # disable validation of Redis cert - it's managed by Azure so it's robust
 CELERY_BROKER_TRANSPORT_OPTIONS['ssl'] = {'ssl_cert_reqs': 0}
 
-# allow iframe embeds on the front end and allow loading of our custom JS via script tag
+# allow iframe embeds - as well as (reluctantly) `unsafe-eval` - see HLP docs
 from superset.config import TALISMAN_CONFIG as DEFAULT_TALISMAN_CONFIG
 TALISMAN_ENABLED = True
 merged_csp = dict(DEFAULT_TALISMAN_CONFIG.get("content_security_policy", {}))
@@ -54,6 +55,10 @@ merged_csp["frame-ancestors"] = [
     "http://localhost:1906",
     "https://stage.hlpst.app",
     "https://hlpst.app",
+]
+merged_csp["script-src"] = [
+    "'self'",
+    "'unsafe-eval'"
 ]
 TALISMAN_CONFIG = {
     **DEFAULT_TALISMAN_CONFIG,
