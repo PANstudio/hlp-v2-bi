@@ -22,5 +22,6 @@ az container create `
     ADMIN_FIRST_NAME="{admin-first-name}" `
     ADMIN_LAST_NAME="{admin-last-name}" `
     ADMIN_EMAIL="{admin-email}" `
+    MAPBOX_KEY="{mapbox-key}" `
     GUEST_TOKEN_JWT_SECRET="{jwt-secret}" `
     GUEST_TOKEN_JWT_EXP_SECONDS=3600

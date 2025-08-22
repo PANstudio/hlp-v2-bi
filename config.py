@@ -24,7 +24,7 @@ GUEST_TOKEN_JWT_EXP_SECONDS = int(environ["GUEST_TOKEN_JWT_EXP_SECONDS"])
 WTF_CSRF_ENABLED = False
 
 # Mapbox
-MAPBOX_API_KEY = ""
+MAPBOX_API_KEY = environ["MAPBOX_KEY"]
 
 # cookie settings to make embed easier
 SESSION_COOKIE_SAMESITE = 'None'
