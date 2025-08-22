@@ -1,0 +1,26 @@
+az container create `
+  --resource-group {resource-group} `
+  --name {container-name} `
+  --image {acr-name}.azurecr.io/hlp-superset:latest `
+  --os-type Linux `
+  --cpu 2 `
+  --memory 2 `
+  --ports 8088 `
+  --dns-name-label {sub-domain} `
+  --environment-variables `
+    SUPERSET_SECRET_KEY="{secret-key}" `
+    SUPERSET_LOAD_EXAMPLES="yes" `
+    DB_USER="{db-user}" `
+    DB_PASS="{db-pass}" `
+    DB_HOST="{db-server}.postgres.database.azure.com" `
+    REDIS_HOST="{redis-name}.redis.cache.windows.net" `
+    REDIS_PORT="6380" `
+    REDIS_PASSWORD="{redis-secret}" `
+    REDIS_SSL="true" `
+    ADMIN_USERNAME="{admin-user}" `
+    ADMIN_PASSWORD="{admin-pass}" `
+    ADMIN_FIRST_NAME="{admin-first-name}" `
+    ADMIN_LAST_NAME="{admin-last-name}" `
+    ADMIN_EMAIL="{admin-email}" `
+    GUEST_TOKEN_JWT_SECRET="{jwt-secret}" `
+    GUEST_TOKEN_JWT_EXP_SECONDS=3600

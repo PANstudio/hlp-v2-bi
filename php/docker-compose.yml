@@ -1,0 +1,9 @@
+services:
+
+  # PHP container
+  php-container:
+    container_name: php-container
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
