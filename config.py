@@ -65,3 +65,7 @@ TALISMAN_CONFIG = {
     "content_security_policy": merged_csp,
     "frame_options": None,  # Disable X-Frame-Options
 }
+
+# DB re-routing so embeds can dictate which DB to connect to
+from db_connection_mutator import db_connection_mutator
+DB_CONNECTION_MUTATOR = db_connection_mutator
