@@ -1,5 +1,7 @@
 from os import environ
 from superset.config import FEATURE_FLAGS as DEFAULT_FEATURE_FLAGS
+from flask_login import current_user
+import json
 
 # SS meta DB
 db_user = environ["DB_USER"]
@@ -43,6 +45,9 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     "visibility_timeout": 3600,
 }
 
+# API rate-limiting via Redis
+RATELIMIT_STORAGE_URI = redis_url
+
 # disable validation of Redis cert - it's managed by Azure so it's robust
 CELERY_BROKER_TRANSPORT_OPTIONS['ssl'] = {'ssl_cert_reqs': 0}
 
@@ -69,3 +74,18 @@ TALISMAN_CONFIG = {
 # DB re-routing so embeds can dictate which DB to connect to
 from db_connection_mutator import db_connection_mutator
 DB_CONNECTION_MUTATOR = db_connection_mutator
+
+# Jinja macros to get requested DB and RLS passed in during embed via the `user.username` prop
+def jinja_macro(which):
+    try:
+        user_data = json.loads(current_user.username)
+        return user_data.get(which)
+    except:
+        match which:
+            case 'db': return 'default'
+            case 'rls': return 'TRUE'
+
+JINJA_CONTEXT_ADDONS = {
+    'hlp_db': lambda: jinja_macro('db'),
+    'hlp_rls': lambda: jinja_macro('rls')
+}
