@@ -75,17 +75,71 @@ TALISMAN_CONFIG = {
 from db_connection_mutator import db_connection_mutator
 DB_CONNECTION_MUTATOR = db_connection_mutator
 
-# Jinja macros to get requested DB and RLS passed in during embed via the `user.username` prop
-def jinja_macro(which):
-    try:
-        user_data = json.loads(current_user.username)
-        return user_data.get(which)
-    except:
-        match which:
-            case 'db': return 'default'
-            case 'rls': return 'TRUE'
+# Jinja macros to get bootstrap queries, including all the necessary bits we need in each query...
 
+# ...util - get user data (from guest token)
+def get_user_data(which):
+    try:
+        return json.loads(current_user.username)[which]
+    except:
+        return False
+
+# ...DB ref to add into SELECT
+def db():
+    db = get_user_data('db')
+    return f"'{db}' AS db" if db else "'default' AS db"
+
+# ...FROM table
+def table(alias):
+    match(alias):
+        case 'im':
+            table = 'inbound_messages'
+        case 'om':
+            table = 'outbound_messages'
+        case 'co':
+            table = 'conversations'
+        case _:
+            raise ValueError('Invalid table alias passed to tables()')
+    return f'{table} {alias}'
+
+# ...joins - join all the way up the CPSA depending on FROM table. If conversations, join to first inbound message only.
+def joins(alias):
+    ret = [
+        'JOIN agents a ON a.id = co.agent_id',
+        'JOIN scripts s ON s.id = a.script_id',
+        'JOIN projects p ON p.id = s.project_id',
+        'JOIN clients c ON c.id = p.client_id',
+    ]
+    if alias != 'co':
+        ret.insert(0, f'JOIN conversations co ON co.id = {alias}.conversation_id')
+    else:
+        ret.append(f"""JOIN (
+            SELECT conversation_id, MIN(created_at) AS created_at
+            FROM inbound_messages
+            GROUP BY conversation_id
+        ) im ON im.conversation_id = {alias}.id""")
+    return '\n'.join(ret)
+
+# ...where-clause builder
+# config.py
+def where(filter_values, from_when=None, to_when=None):
+    clauses = [get_user_data('rls') or 'TRUE']
+    if from_when:
+        clauses.append(f"im.created_at >= '{from_when}'")
+    if to_when:
+        clauses.append(f"im.created_at <= '{to_when}'")
+    for fltr in ['medium', 'language']:
+        values = filter_values(fltr)
+        if values:
+            in_part = "'" + "','".join(values) + "'"
+            clauses.append(f"co.{fltr} IN ({in_part})")
+
+    return ' AND '.join(clauses)
+
+# ...declare macros
 JINJA_CONTEXT_ADDONS = {
-    'hlp_db': lambda: jinja_macro('db'),
-    'hlp_rls': lambda: jinja_macro('rls')
+    'db': db,
+    'table': table,
+    'joins': joins,
+    'where': where
 }
