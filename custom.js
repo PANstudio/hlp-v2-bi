@@ -46,4 +46,20 @@
 	const subDomain = ctx => !['stage', 'dev'].includes(db(ctx)) ? '' : db(ctx)+'.';
 	const db = ctx => ctx.object.extraProps.db;
 
+	/* ---
+	| DASHBOARD TWEAKS
+	--- */
+
+	//make busiest day/hour charts show text (something big number charts can't natively do). Need to interval this as
+	//we can't know when a chart has rendered
+	setInterval(() => {
+	    const dayEl = document.querySelector('[data-test-chart-name="Convos - busiest day"] .superset-legacy-chart-big-number div')
+	    const dayNum = parseInt(dayEl?.textContent);
+	    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+	    if (dayEl && dayNum) dayEl.textContent = days[dayNum];
+	    const hourEl = document.querySelector('[data-test-chart-name="Convos - busiest hour"] .superset-legacy-chart-big-number div')
+	    const hour = parseInt(hourEl?.textContent);
+	    if (hourEl && hour) hourEl.textContent = hour+':00'
+	}, 1000);
+
 })();

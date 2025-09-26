@@ -40,6 +40,7 @@ az container create `
     DB_DEV_HOST="{db-dev-host}" `
     DB_DEV_USER="{db-dev-user}" `
     DB_DEV_PASS="{db-dev-pass}" `
+    DB_DEV_DB="{db-dev-db}" `
     DB_STAGE_HOST="{db-stage-host}" `
     DB_STAGE_USER="{db-stage-user}" `
     DB_STAGE_PASS="{db-stage-pass}"

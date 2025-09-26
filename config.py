@@ -18,7 +18,7 @@ FEATURE_FLAGS = {
 }
 
 # guest tokens (for embeds)
-GUEST_ROLE_NAME = "Gamma"
+GUEST_ROLE_NAME = "Embed"
 GUEST_TOKEN_JWT_SECRET = environ["GUEST_TOKEN_JWT_SECRET"]
 GUEST_TOKEN_JWT_ALGO = "HS256"
 GUEST_TOKEN_JWT_EXP_SECONDS = int(environ["GUEST_TOKEN_JWT_EXP_SECONDS"])
@@ -75,6 +75,24 @@ TALISMAN_CONFIG = {
 from db_connection_mutator import db_connection_mutator
 DB_CONNECTION_MUTATOR = db_connection_mutator
 
+# disable fine time grains
+TIME_GRAIN_DENYLIST = ['PT1H', 'PT1M', 'PT1S']
+
+# DB connections
+SQLALCHEMY_POOL_SIZE = 5       # number of persistent connections
+SQLALCHEMY_MAX_OVERFLOW = 10   # extra connections that can be opened temporarily
+SQLALCHEMY_POOL_RECYCLE = 300  # seconds to recycle idle connections
+
+# colours
+EXTRA_CATEGORICAL_COLOR_SCHEMES = [{
+    'id': 'hlp',
+    'description': '',
+    'label': 'HLP colours',
+    'isDefault': True,
+    'colors': ['#ffe05f', '#47beee', '#357174', '#F37660', '#F9BBBA', '#3ABDAF', '#AED9AE']
+}]
+DEFAULT_CATEGORICAL_COLOR_SCHEME = 'hlp'
+
 # Jinja macros to get bootstrap queries, including all the necessary bits we need in each query...
 
 # ...util - get user data (from guest token)
@@ -121,9 +139,9 @@ def joins(alias):
     return '\n'.join(ret)
 
 # ...where-clause builder
-# config.py
 def where(filter_values, from_when=None, to_when=None):
     clauses = [get_user_data('rls') or 'TRUE']
+    clauses.append("(co.is_test = CASE WHEN p.status != 'pr' THEN FALSE ELSE TRUE END)")
     if from_when:
         clauses.append(f"im.created_at >= '{from_when}'")
     if to_when:
@@ -133,13 +151,17 @@ def where(filter_values, from_when=None, to_when=None):
         if values:
             in_part = "'" + "','".join(values) + "'"
             clauses.append(f"co.{fltr} IN ({in_part})")
-
     return ' AND '.join(clauses)
+
+# ...order by
+def order(alias, col='id', dir='DESC'):
+    return f'{alias}.{col} {dir}'
 
 # ...declare macros
 JINJA_CONTEXT_ADDONS = {
     'db': db,
     'table': table,
     'joins': joins,
-    'where': where
+    'where': where,
+    'order': order
 }
