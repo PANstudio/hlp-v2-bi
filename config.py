@@ -31,7 +31,7 @@ MAPBOX_API_KEY = environ["MAPBOX_KEY"]
 
 # cookie settings to make embed easier
 SESSION_COOKIE_SAMESITE = 'None'
-# SESSION_COOKIE_SECURE = True # <-- uncomment this when we put SS on HTTPS
+SESSION_COOKIE_SECURE = True # <-- not strictly necessary since CF enforces HTTPS anyway
 
 # Redis
 REDIS_HOST = environ["REDIS_HOST"]
@@ -79,9 +79,10 @@ DB_CONNECTION_MUTATOR = db_connection_mutator
 TIME_GRAIN_DENYLIST = ['PT1H', 'PT1M', 'PT1S']
 
 # DB connections
-SQLALCHEMY_POOL_SIZE = 5       # number of persistent connections
-SQLALCHEMY_MAX_OVERFLOW = 10   # extra connections that can be opened temporarily
-SQLALCHEMY_POOL_RECYCLE = 300  # seconds to recycle idle connections
+SQLALCHEMY_POOL_SIZE = 2
+SQLALCHEMY_MAX_OVERFLOW = 1
+SQLALCHEMY_POOL_RECYCLE = 1800
+SQLALCHEMY_POOL_TIMEOUT = 30
 
 # colours
 EXTRA_CATEGORICAL_COLOR_SCHEMES = [{
@@ -131,21 +132,24 @@ def joins(alias):
     if alias != 'co':
         ret.insert(0, f'JOIN conversations co ON co.id = {alias}.conversation_id')
     else:
-        ret.append(f"""JOIN (
-            SELECT conversation_id, MIN(created_at) AS created_at
-            FROM inbound_messages
-            GROUP BY conversation_id
-        ) im ON im.conversation_id = {alias}.id""")
+        ret.append(f"""JOIN LATERAL (
+          SELECT created_at
+          FROM inbound_messages im
+          WHERE im.conversation_id = co.id
+          ORDER BY created_at ASC
+          LIMIT 1
+        ) im ON true""")
     return '\n'.join(ret)
 
 # ...where-clause builder
 def where(filter_values, from_when=None, to_when=None):
     clauses = [get_user_data('rls') or 'TRUE']
     clauses.append("(co.is_test = CASE WHEN p.status != 'pr' THEN FALSE ELSE TRUE END)")
+    tz = "AT TIME ZONE 'utc' AT TIME ZONE p.timezone"
     if from_when:
-        clauses.append(f"im.created_at >= '{from_when}'")
+        clauses.append(f"im.created_at {tz} >= '{from_when}'")
     if to_when:
-        clauses.append(f"im.created_at <= '{to_when}'")
+        clauses.append(f"im.created_at {tz} <= '{to_when}'")
     for fltr in ['medium', 'language']:
         values = filter_values(fltr)
         if values:

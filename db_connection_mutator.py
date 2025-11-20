@@ -3,7 +3,7 @@ from flask import g
 import json
 
 # valid DBs
-DBS = ['uk', 'us', 'can', 'aus', 'dev', 'stage']
+DBS = ['uk', 'aus', 'us', 'can', 'dev', 'stage']
 DB_MAP = {}
 for db in DBS:
     DB_MAP[db] = {
@@ -22,9 +22,7 @@ def db_connection_mutator(sqlalchemy_uri, database, username, security_manager, 
         user_data = {}
     g.db = user_data.get('db') or ''
     g.rls = user_data.get('rls') or 'TRUE'
-    print(f"!!! Request to repoint SS to {g.db} DB")
     if g.db in DB_MAP:
         cfg = DB_MAP[g.db]
         sqlalchemy_uri = f"postgresql://{cfg['user']}:{cfg['password']}@{cfg['host']}/{cfg['dbname']}"
-    print(f"!!! Repointing SS to {g.db} DB")
     return sqlalchemy_uri, {}
